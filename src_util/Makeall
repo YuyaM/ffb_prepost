@@ -1,0 +1,3 @@
+#!/bin/bash
+# script for automatically compiled
+cd phaseAverage ; make -f ../../../make/makefile load ; cd ..
