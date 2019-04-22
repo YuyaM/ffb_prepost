@@ -200,7 +200,8 @@
      *           MCOM,NCOMST,COMSET,
      *           IACT,IWRITE,INAME,IRESV,  
      *           ICAST,IDATA0,IALL,ISKIP,IERR,
-     *           ' !', *           ICHECK)     
+     *           ' !', 
+     *           ICHECK)     
       if(IERR.NE.0) STOP
 !
 ! conduct average
