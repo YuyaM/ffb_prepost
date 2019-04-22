@@ -53,7 +53,7 @@
 !
       integer(4)    :: ISTEP,NPCHK,NEPRS,NPPRS
       real(4)       :: TIMEP,INVNUM
-      character(60) :: FILEMS,FILEAR,FILEFF,FILEAV,FILEAVE
+      character(60) :: FILEMS,FILEAR,FILEFF,FILEAV,FILEAVE,FILEFS
       integer(4)    :: NSTEP,ISUM,II,NSUM,NFLOWS
 !     [work]
       integer(4)    :: NP,NE,NDUM
@@ -65,7 +65,7 @@
       integer(4),parameter :: IUTMS = 11
       integer(4),parameter :: IUTFF = 12
       integer(4),parameter :: IUTAV = 13
-      integer(4) :: IERR,FLAGOK
+      integer(4) :: IERR,FLAGOK,FLAGGFSEP,FLAGDELIM
 !
 ! read MESH DATA
 !
@@ -74,18 +74,33 @@
 !
       do
           write(IUT6,*)
-          write(IUT6,*) 'Specify filename for MESH data'
+          write(IUT6,*) '[In]Specify filename for MESH data'
           read (IUT5,'(A60)') FILEMS
-          write(IUT6,*) 'Specify filename for FLOWS data'
+          write(IUT6,*) '[In]Specify filename for FLOWS data'
           read (IUT5,'(A60)') FILEFF
-          write(IUT6,*) 'Specify filename for AVE  data'
+          write(IUT6,*) '[Out]Specify filename for AVE  data'
           read (IUT5,'(A60)') FILEAV
           write(IUT6,*) 'Specify interval number for phase-average'
           read (IUT5,*) NSTEP
+          write(IUT6,*) 'if FLOWS IS SEPARATED    :1'
+          write(IUT6,*) 'if FLOWS IS NOT SEPARATED:0'
+          read (IUT5,*) FLAGGFSEP
+          write(IUT6,*) 'Specify number of flowsfor phase-average'
+          read (IUT5,*) NFLOWS
+          write(IUT6,*) 'if want to change delimiter .P****'
+          read (IUT5,*) FLAGDELIM
+          IF(FLAGDELIM.eq.1)THEN
+            write(IUT6,*) 'USE .P**** :0'
+            write(IUT6,*) 'USE .t**** :1'
+            read (IUT5,*) FLAGDELIM
+          ENDIF
 
-          write(IUT6,'(A60)') FILEMS
-          write(IUT6,'(A60)') FILEAV
-          write(IUT6,'(A60)') FILEAV
+          write(IUT6,'(A10,A60)') "FILEMS   =", FILEMS
+          write(IUT6,'(A10,A60)') "FILEFF   =", FILEFF
+          write(IUT6,'(A10,A60)') "FILEAV   =", FILEAV
+          write(IUT6,'(A10,I6)')  "NSTEP    =", NSTEP
+          write(IUT6,'(A10,I6)')  "FLAGGFSEP=", FLAGGFSEP
+          write(IUT6,'(A10,I6)')  "NFLOWS   =", NFLOWS
           write(IUT6,*) 'These parameters are ok? Yes:1,No:0'
           read(IUT5,*) FLAGOK
           if(FLAGOK.EQ.1) exit
@@ -141,68 +156,119 @@
 !
 ! read FLOWS file
 !
-      IACT = 3
-      ! Open FLOWS
-      call GFALL(IUT0,IUT6,IUTFF,FILEFF,
-     *           MCOM,NCOMFL,COMFLE,
-     *           MCOM,NCOMST,COMSET,
-     *           IACT,IWRITE,INAME,IRESV,  
-     *           ICAST,IDATA0,IALL,ISKIP,IERR,
-     *           ' !',
-     *           ICHECK)     
-      if(IERR.NE.0) STOP
-
-      UA = 0.0E0
-      VA = 0.0E0
-      WA = 0.0E0
-      PA = 0.0E0
-      PNA = 0.0E0
-      NSUM = 0
-      NFLOWS = 0
-      do
-        IACT = 5
-        ! Read FLOWS
+      IF(FLAGGFSEP.EQ.0)THEN
+        IACT = 3
+        ! Open FLOWS
         call GFALL(IUT0,IUT6,IUTFF,FILEFF,
      *             MCOM,NCOMFL,COMFLE,
      *             MCOM,NCOMST,COMSET,
      *             IACT,IWRITE,INAME,IRESV,  
      *             ICAST,IDATA0,IALL,ISKIP,IERR,
-     *             '*TIME_PS *STEP_PS *VELO_3D 
-     *              *PRES_3E *PRES_3D !',
-     *             NAME,TIMEP,
-     *             NAME,ISTEP,
-     *             NAME,MP,NPCHK,U,V,W,
-     *             NAME,ME,NEPRS,P,
-     *             NAME,MP,NPPRS,PN,
-     *             ICHECK)
-        if(IERR.NE.0)   STOP
-        ! NFLOWSはFLOWSの数
-        NFLOWS = NFLOWS + 1
-        ! ISUM = 0 - NSTEP-1
-        ! 1,2,3,..,0(NSTEP),1,2,3..,0(NSTEP)
-        ISUM = mod(NFLOWS,NSTEP)
-        ! NSUMは平均した回数
-        IF(ISUM == 0) NSUM = NSUM + 1
-        ! ISUM+1 = 1 - NSTEP
-        UA (:,ISUM+1) = UA (:,ISUM+1) + U
-        VA (:,ISUM+1) = VA (:,ISUM+1) + V
-        WA (:,ISUM+1) = WA (:,ISUM+1) + W
-        PA (:,ISUM+1) = PA (:,ISUM+1) + P
-        PNA(:,ISUM+1) = PNA(:,ISUM+1) + PN
-        write(IUT6,*) "averaged:when NFLOWS=",NFLOWS,",NSUM=",NSUM
-        if(IACT .EQ. 7) exit
-      end do
+     *             ' !',
+     *             ICHECK)     
+        if(IERR.NE.0) STOP
 
-      IACT = 7
-      ! Close FLOWS
-      call GFALL(IUT0,IUT6,IUTFF,FILEFF,
-     *           MCOM,NCOMFL,COMFLE,
-     *           MCOM,NCOMST,COMSET,
-     *           IACT,IWRITE,INAME,IRESV,  
-     *           ICAST,IDATA0,IALL,ISKIP,IERR,
-     *           ' !', 
-     *           ICHECK)     
-      if(IERR.NE.0) STOP
+        UA = 0.0E0
+        VA = 0.0E0
+        WA = 0.0E0
+        PA = 0.0E0
+        PNA = 0.0E0
+        NSUM = 0
+        NFLOWS = 0
+        do
+          IACT = 5
+          ! Read FLOWS
+          call GFALL(IUT0,IUT6,IUTFF,FILEFF,
+     *               MCOM,NCOMFL,COMFLE,
+     *               MCOM,NCOMST,COMSET,
+     *               IACT,IWRITE,INAME,IRESV,  
+     *               ICAST,IDATA0,IALL,ISKIP,IERR,
+     *               '*TIME_PS *STEP_PS *VELO_3D 
+     *                *PRES_3E *PRES_3D !',
+     *               NAME,TIMEP,
+     *               NAME,ISTEP,
+     *               NAME,MP,NPCHK,U,V,W,
+     *               NAME,ME,NEPRS,P,
+     *               NAME,MP,NPPRS,PN,
+     *               ICHECK)
+          if(IERR.NE.0)   STOP
+          ! NFLOWSはFLOWSの数
+          NFLOWS = NFLOWS + 1
+          ! ISUM = 0 - NSTEP-1
+          ! 1,2,3,..,0(NSTEP),1,2,3..,0(NSTEP)
+          ISUM = mod(NFLOWS,NSTEP)
+          ! NSUMは平均した回数
+          IF(ISUM == 0) NSUM = NSUM + 1
+          ! ISUM+1 = 1 - NSTEP
+          UA (:,ISUM+1) = UA (:,ISUM+1) + U
+          VA (:,ISUM+1) = VA (:,ISUM+1) + V
+          WA (:,ISUM+1) = WA (:,ISUM+1) + W
+          PA (:,ISUM+1) = PA (:,ISUM+1) + P
+          PNA(:,ISUM+1) = PNA(:,ISUM+1) + PN
+          write(IUT6,*) "averaged:when NFLOWS=",NFLOWS,",NSUM=",NSUM
+          if(IACT .EQ. 7) exit
+        end do
+
+        IACT = 7
+        ! Close FLOWS
+        call GFALL(IUT0,IUT6,IUTFF,FILEFF,
+     *             MCOM,NCOMFL,COMFLE,
+     *             MCOM,NCOMST,COMSET,
+     *             IACT,IWRITE,INAME,IRESV,  
+     *             ICAST,IDATA0,IALL,ISKIP,IERR,
+     *             ' !', 
+     *             ICHECK)     
+        if(IERR.NE.0) STOP
+      ELSEIF(FLAGGFSEP.EQ.1)THEN
+        ! SEPARATED
+        write(IUT6,*) "FLAGGFSEP",FLAGGFSEP
+        write(IUT6,*) "NFLOWS",NFLOWS
+        UA = 0.0E0
+        VA = 0.0E0
+        WA = 0.0E0
+        PA = 0.0E0
+        PNA = 0.0E0
+        NSUM = 0
+        do II=1,NFLOWS
+          write(CNUM,'(I4.4)') II
+          IF(FLAGDELIM.eq.0)THEN
+            FILEFS=FILEFF//".P"//CNUM
+          ELSEIF(FLAGDELIM.eq.1)THEN
+            FILEFS=trim(FILEFF)//".t"//CNUM
+          ENDIF
+          ! Read FLOWS
+          IACT = 1
+          call GFALL(IUT0,IUT6,IUTFF,FILEFS,
+     *               MCOM,NCOMFL,COMFLE,
+     *               MCOM,NCOMST,COMSET,
+     *               IACT,IWRITE,INAME,IRESV,  
+     *               ICAST,IDATA0,IALL,ISKIP,IERR,
+     *               '*TIME_PS *STEP_PS *VELO_3D 
+     *                *PRES_3E *PRES_3D !',
+     *               NAME,TIMEP,
+     *               NAME,ISTEP,
+     *               NAME,MP,NPCHK,U,V,W,
+     *               NAME,ME,NEPRS,P,
+     *               NAME,MP,NPPRS,PN,
+     *               ICHECK)
+          if(IERR.NE.0)   STOP
+          ! ISUM = 0 - NSTEP-1
+          ! 1,2,3,..,0(NSTEP),1,2,3..,0(NSTEP)
+          ISUM = mod(NFLOWS,NSTEP)
+          ! NSUMは平均した回数
+          IF(ISUM == 0) NSUM = NSUM + 1
+          ! ISUM+1 = 1 - NSTEP
+          UA (:,ISUM+1) = UA (:,ISUM+1) + U
+          VA (:,ISUM+1) = VA (:,ISUM+1) + V
+          WA (:,ISUM+1) = WA (:,ISUM+1) + W
+          PA (:,ISUM+1) = PA (:,ISUM+1) + P
+          PNA(:,ISUM+1) = PNA(:,ISUM+1) + PN
+          write(IUT6,*) "averaged:when NFLOWS=",II,",NSUM=",NSUM
+        end do
+      ELSE
+         write(IUT6,*) "FLAGGFSEP",FLAGGFSEP
+         STOP
+      ENDIF
 !
 ! conduct average
 !
