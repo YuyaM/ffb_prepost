@@ -232,7 +232,7 @@
         do II=1,NFLOWS
           write(CNUM,'(I4.4)') II
           IF(FLAGDELIM.eq.0)THEN
-            FILEFS=FILEFF//".P"//CNUM
+            FILEFS=trim(FILEFF)//".P"//CNUM
           ELSEIF(FLAGDELIM.eq.1)THEN
             FILEFS=trim(FILEFF)//".t"//CNUM
           ENDIF
