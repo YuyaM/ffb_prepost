@@ -176,14 +176,15 @@
      *             NAME,MP,NPPRS,PN,
      *             ICHECK)
         if(IERR.NE.0)   STOP
-        NFLOWS = NFLOWS + 1
         ISUM = mod(NFLOWS,NSTEP)
+        NFLOWS = NFLOWS + 1
         IF(ISUM == 0) NSUM = NSUM + 1
         UA (:,ISUM) = UA (:,ISUM) + U
         VA (:,ISUM) = VA (:,ISUM) + V
         WA (:,ISUM) = WA (:,ISUM) + W
         PA (:,ISUM) = PA (:,ISUM) + P
         PNA(:,ISUM) = PNA(:,ISUM) + PN
+        write(IUT6,*) "averaged:when NFLOWS=",NFLOWS,",NSUM=",NSUM
         if(IACT .EQ. 7) exit
       end do
 
