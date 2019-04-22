@@ -176,14 +176,19 @@
      *             NAME,MP,NPPRS,PN,
      *             ICHECK)
         if(IERR.NE.0)   STOP
-        ISUM = mod(NFLOWS,NSTEP)
+        ! NFLOWSはFLOWSの数
         NFLOWS = NFLOWS + 1
+        ! ISUM = 0 - NSTEP-1
+        ! 1,2,3,..,0(NSTEP),1,2,3..,0(NSTEP)
+        ISUM = mod(NFLOWS,NSTEP)
+        ! NSUMは平均した回数
         IF(ISUM == 0) NSUM = NSUM + 1
-        UA (:,ISUM) = UA (:,ISUM) + U
-        VA (:,ISUM) = VA (:,ISUM) + V
-        WA (:,ISUM) = WA (:,ISUM) + W
-        PA (:,ISUM) = PA (:,ISUM) + P
-        PNA(:,ISUM) = PNA(:,ISUM) + PN
+        ! ISUM+1 = 1 - NSTEP
+        UA (:,ISUM+1) = UA (:,ISUM+1) + U
+        VA (:,ISUM+1) = VA (:,ISUM+1) + V
+        WA (:,ISUM+1) = WA (:,ISUM+1) + W
+        PA (:,ISUM+1) = PA (:,ISUM+1) + P
+        PNA(:,ISUM+1) = PNA(:,ISUM+1) + PN
         write(IUT6,*) "averaged:when NFLOWS=",NFLOWS,",NSUM=",NSUM
         if(IACT .EQ. 7) exit
       end do
@@ -195,32 +200,56 @@
      *           MCOM,NCOMST,COMSET,
      *           IACT,IWRITE,INAME,IRESV,  
      *           ICAST,IDATA0,IALL,ISKIP,IERR,
-     *           ' !',
-     *           ICHECK)     
+     *           ' !', *           ICHECK)     
       if(IERR.NE.0) STOP
 !
 ! conduct average
 !
-      if(ISUM.NE.NSTEP)then
-          INVNUM = 1.0E0 / float(NSUM)
-          do II=ISUM,NSTEP
-            UA (:,II) = UA (:,II) / INVNUM
-            VA (:,II) = VA (:,II) / INVNUM
-            WA (:,II) = WA (:,II) / INVNUM
-            PA (:,II) = PA (:,II) / INVNUM
-            PNA(:,II) = PNA(:,II) / INVNUM
-          end do
+      ! ゼロ割りを防ぐ
+      if(NSUM < 1)then
+          WRITE(IUT6,*) "ERROR IN FLAG1"
+          STOP
       endif
-      if(ISUM.NE.0)then
-          INVNUM = 1.0E0 / float(NSUM-1)
-          do II=1,ISUM
-            UA (:,II) = UA (:,II) / INVNUM
-            VA (:,II) = VA (:,II) / INVNUM
-            WA (:,II) = WA (:,II) / INVNUM
-            PA (:,II) = PA (:,II) / INVNUM
-            PNA(:,II) = PNA(:,II) / INVNUM
-          end do
-      endif
+      INVNUM = 1.0E0 / float(NSUM)
+      do II=1,NSTEP
+        UA (:,II) = UA (:,II) * INVNUM
+        VA (:,II) = VA (:,II) * INVNUM
+        WA (:,II) = WA (:,II) * INVNUM
+        PA (:,II) = PA (:,II) * INVNUM
+        PNA(:,II) = PNA(:,II) * INVNUM
+      end do
+
+      !! ISUM = 0 - NSTEP-1
+      !if(ISUM.NE.NSTEP)then
+      !    ! ゼロ割りを防ぐ
+      !    if(NSUM < 1)then
+      !        WRITE(IUT6,*) "ERROR IN FLAG1"
+      !        STOP
+      !    endif
+      !    INVNUM = 1.0E0 / float(NSUM)
+      !    do II=ISUM,NSTEP
+      !      UA (:,II) = UA (:,II) * INVNUM
+      !      VA (:,II) = VA (:,II) * INVNUM
+      !      WA (:,II) = WA (:,II) * INVNUM
+      !      PA (:,II) = PA (:,II) * INVNUM
+      !      PNA(:,II) = PNA(:,II) * INVNUM
+      !    end do
+      !endif
+      !if(ISUM.NE.0)then
+      !    ! ゼロ割りを防ぐ
+      !    if(NSUM <= 1)then
+      !        WRITE(IUT6,*) "ERROR IN FLAG2"
+      !        STOP
+      !    endif
+      !    INVNUM = 1.0E0 / float(NSUM-1)
+      !    do II=1,ISUM
+      !      UA (:,II) = UA (:,II) * INVNUM
+      !      VA (:,II) = VA (:,II) * INVNUM
+      !      WA (:,II) = WA (:,II) * INVNUM
+      !      PA (:,II) = PA (:,II) * INVNUM
+      !      PNA(:,II) = PNA(:,II) * INVNUM
+      !    end do
+      !endif
 !
 ! output AVE file
 !
@@ -240,7 +269,7 @@
      *               MCOM,NCOMFL,COMFLE,
      *               MCOM,NCOMST,COMSET,
      *               IACT,IWRITE,INAME,IRESV,  
-     *               ICAST,IDATA0,IALL,ISKIP,IERR,
+     *               ICAST,IDATA0,IALL,ISKIP,IERR, 
      *               '*TIME_PS *STEP_PS *VELO_3D 
      *                *PRES_3E *PRES_3D !',
      *               NAME,TIMEP,
