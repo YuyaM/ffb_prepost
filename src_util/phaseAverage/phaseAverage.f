@@ -56,7 +56,7 @@
       character(60) :: FILEMS,FILEAR,FILEFF,FILEAV,FILEAVE,FILEFS
       integer(4)    :: NSTEP,ISUM,II,NSUM,NFLOWS
 !     [work]
-      integer(4)    :: NP,NE,NDUM
+      integer(4)    :: NP,NE,NDUM,IP,IE
       character(4)  :: CNUM
       ! fortran input output
       integer(4),parameter :: IUT0  = 0
@@ -200,12 +200,18 @@
           ! NSUMは平均した回数
           IF(ISUM == 0) NSUM = NSUM + 1
           ! ISUM+1 = 1 - NSTEP
-          UA (:,ISUM+1) = UA (:,ISUM+1) + U
-          VA (:,ISUM+1) = VA (:,ISUM+1) + V
-          WA (:,ISUM+1) = WA (:,ISUM+1) + W
-          PA (:,ISUM+1) = PA (:,ISUM+1) + P
-          PNA(:,ISUM+1) = PNA(:,ISUM+1) + PN
-          write(IUT6,*) "averaged:when NFLOWS=",NFLOWS,",NSUM=",NSUM
+          do IP=1,NP
+            UA (IP,ISUM+1) = UA (IP,ISUM+1) + U (IP)
+            VA (IP,ISUM+1) = VA (IP,ISUM+1) + V (IP)
+            WA (IP,ISUM+1) = WA (IP,ISUM+1) + W (IP)
+            PNA(IP,ISUM+1) = PNA(IP,ISUM+1) + PN(IP)
+          enddo
+          do IE=1,NE
+            PA (IE,ISUM+1) = PA (IE,ISUM+1) + P(IE)
+          enddo
+          write(IUT6,*) "averaged:when NFLOWS=",NFLOWS,
+     *                                 ",NSUM=",NSUM,
+     *                                 ",ISUM=",ISUM
           if(IACT .EQ. 7) exit
         end do
 
@@ -254,16 +260,21 @@
           if(IERR.NE.0)   STOP
           ! ISUM = 0 - NSTEP-1
           ! 1,2,3,..,0(NSTEP),1,2,3..,0(NSTEP)
-          ISUM = mod(NFLOWS,NSTEP)
+          ISUM = mod(II,NSTEP)
           ! NSUMは平均した回数
           IF(ISUM == 0) NSUM = NSUM + 1
           ! ISUM+1 = 1 - NSTEP
-          UA (:,ISUM+1) = UA (:,ISUM+1) + U
-          VA (:,ISUM+1) = VA (:,ISUM+1) + V
-          WA (:,ISUM+1) = WA (:,ISUM+1) + W
-          PA (:,ISUM+1) = PA (:,ISUM+1) + P
-          PNA(:,ISUM+1) = PNA(:,ISUM+1) + PN
-          write(IUT6,*) "averaged:when NFLOWS=",II,",NSUM=",NSUM
+          do IP=1,NP
+            UA (IP,ISUM+1) = UA (IP,ISUM+1) + U(IP)
+            VA (IP,ISUM+1) = VA (IP,ISUM+1) + V(IP)
+            WA (IP,ISUM+1) = WA (IP,ISUM+1) + W(IP)
+            PNA(IP,ISUM+1) = PNA(IP,ISUM+1) + PN(IP)
+          end do
+          do IE=1,NE
+            PA (IE,ISUM+1) = PA (IE,ISUM+1) + P(IE)
+          end do
+          write(IUT6,*) "averaged:when NFLOWS=",II,",NSUM=",NSUM,
+     *                                 ",ISUM=",ISUM
         end do
       ELSE
          write(IUT6,*) "FLAGGFSEP",FLAGGFSEP
@@ -279,11 +290,15 @@
       endif
       INVNUM = 1.0E0 / float(NSUM)
       do II=1,NSTEP
-        UA (:,II) = UA (:,II) * INVNUM
-        VA (:,II) = VA (:,II) * INVNUM
-        WA (:,II) = WA (:,II) * INVNUM
-        PA (:,II) = PA (:,II) * INVNUM
-        PNA(:,II) = PNA(:,II) * INVNUM
+        do IP=1,NP
+          UA (IP,II) = UA (IP,II) * INVNUM
+          VA (IP,II) = VA (IP,II) * INVNUM
+          WA (IP,II) = WA (IP,II) * INVNUM
+          PNA(IP,II) = PNA(IP,II) * INVNUM
+        end do
+        do IE=1,NE
+          PA (IE,II) = PA (IE,II) * INVNUM
+        end do
       end do
 
       !! ISUM = 0 - NSTEP-1
@@ -323,11 +338,15 @@
       do II=1,NSTEP
           TIMEP = 0.0E0
           ISTEP = NSUM
-          U  = UA (:,II)
-          V  = VA (:,II)
-          W  = WA (:,II)
-          P  = PA (:,II)
-          PN = PNA(:,II)
+          do IP=1,NP
+            U  (IP)= UA (IP,II)
+            V  (IP)= VA (IP,II)
+            W  (IP)= WA (IP,II)
+            PN (IP)= PNA(IP,II)
+          end do
+          do IE=1,NE
+            P(IE)  = PA (IE,II)
+          end do
  
           IACT = 2
           write(CNUM,'(I4.4)') II
