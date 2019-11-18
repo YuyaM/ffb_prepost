@@ -34,7 +34,7 @@
       !! @param U,V,W :: Velocity
       !! @param P     :: Pressure at element
       !! @param PN    :: Pressure at node
-      !! @param NSTEP :: phase average interval
+      !! @param numPhase :: phase average interval
       !! @param NSUM  :: Number of Flow in FLOWS
       program phaseAverage
       implicit none
@@ -54,7 +54,7 @@
       integer(4)    :: ISTEP,NPCHK,NEPRS,NPPRS
       real(4)       :: TIMEP,INVNUM
       character(60) :: FILEMS,FILEAR,FILEFF,FILEAV,FILEAVE,FILEFS
-      integer(4)    :: NSTEP,ISUM,II,NSUM,IFLOWS,NFLOWS
+      integer(4)    :: numPhase,ISUM,iPhase,NSUM,IFLOWS,NFLOWS
 !     [work]
       integer(4)    :: NP,NE,NDUM,IP,IE
       character(4)  :: CNUM
@@ -81,7 +81,7 @@
           write(IUT6,*) '[Out]Specify filename for AVE  data'
           read (IUT5,'(A60)') FILEAV
           write(IUT6,*) 'Specify interval number for phase-average'
-          read (IUT5,*) NSTEP
+          read (IUT5,*) numPhase
           write(IUT6,*) 'if FLOWS IS SEPARATED    :1'
           write(IUT6,*) 'if FLOWS IS NOT SEPARATED:0'
           read (IUT5,*) FLAGGFSEP
@@ -98,7 +98,7 @@
           write(IUT6,'(A10,A60)') "FILEMS   =", FILEMS
           write(IUT6,'(A10,A60)') "FILEFF   =", FILEFF
           write(IUT6,'(A10,A60)') "FILEAV   =", FILEAV
-          write(IUT6,'(A10,I6)')  "NSTEP    =", NSTEP
+          write(IUT6,'(A10,I6)')  "numPhase    =", numPhase
           write(IUT6,'(A10,I6)')  "FLAGGFSEP=", FLAGGFSEP
           write(IUT6,'(A10,I6)')  "NFLOWS   =", NFLOWS
           write(IUT6,*) 'These parameters are ok? Yes:1,No:0'
@@ -125,11 +125,11 @@
       allocate(        W(MP), STAT=LERR(07))
       allocate(        P(ME), STAT=LERR(08))
       allocate(       PN(MP), STAT=LERR(09))
-      allocate( UA(MP,NSTEP), STAT=LERR(10))
-      allocate( VA(MP,NSTEP), STAT=LERR(11))
-      allocate( WA(MP,NSTEP), STAT=LERR(12))
-      allocate( PA(ME,NSTEP), STAT=LERR(13))
-      allocate(PNA(MP,NSTEP), STAT=LERR(14))
+      allocate( UA(MP,numPhase), STAT=LERR(10))
+      allocate( VA(MP,numPhase), STAT=LERR(11))
+      allocate( WA(MP,numPhase), STAT=LERR(12))
+      allocate( PA(ME,numPhase), STAT=LERR(13))
+      allocate(PNA(MP,numPhase), STAT=LERR(14))
       call CHKALC(14,LERR,IUT6,IERR) 
       if(IERR.NE.0) then
           write(IUT6,*) 'phaseAverage: allocating error       '
@@ -194,12 +194,12 @@
           if(IERR.NE.0)   STOP
           ! NFLOWSはFLOWSの数
           NFLOWS = NFLOWS + 1
-          ! ISUM = 0 - NSTEP-1
-          ! 1,2,3,..,0(NSTEP),1,2,3..,0(NSTEP)
-          ISUM = mod(NFLOWS,NSTEP)
+          ! ISUM = 0 - numPhase-1
+          ! 1,2,3,..,0(numPhase),1,2,3..,0(numPhase)
+          ISUM = mod(NFLOWS,numPhase)
           ! NSUMは平均した回数
           IF(ISUM == 0) NSUM = NSUM + 1
-          ! ISUM+1 = 1 - NSTEP
+          ! ISUM+1 = 1 - numPhase
           do IP=1,NP
             UA (IP,ISUM+1) = UA (IP,ISUM+1) + U (IP)
             VA (IP,ISUM+1) = VA (IP,ISUM+1) + V (IP)
@@ -258,12 +258,12 @@
      *               NAME,MP,NPPRS,PN,
      *               ICHECK)
           if(IERR.NE.0)   STOP
-          ! ISUM = 0 - NSTEP-1
-          ! 1,2,3,..,0(NSTEP),1,2,3..,0(NSTEP)
-          ISUM = mod(IFLOWS,NSTEP)
+          ! ISUM = 0 - numPhase-1
+          ! 1,2,3,..,0(numPhase),1,2,3..,0(numPhase)
+          ISUM = mod(IFLOWS,numPhase)
           ! NSUMは平均した回数
           IF(ISUM == 0) NSUM = NSUM + 1
-          ! ISUM+1 = 1 - NSTEP
+          ! ISUM+1 = 1 - numPhase
           do IP=1,NP
             UA (IP,ISUM+1) = UA (IP,ISUM+1) + U(IP)
             VA (IP,ISUM+1) = VA (IP,ISUM+1) + V(IP)
@@ -289,67 +289,36 @@
           STOP
       endif
       INVNUM = 1.0E0 / float(NSUM)
-      do II=1,NSTEP
+      do iPhase=1,numPhase
         do IP=1,NP
-          UA (IP,II) = UA (IP,II) * INVNUM
-          VA (IP,II) = VA (IP,II) * INVNUM
-          WA (IP,II) = WA (IP,II) * INVNUM
-          PNA(IP,II) = PNA(IP,II) * INVNUM
+          UA (IP,iPhase) = UA (IP,iPhase) * INVNUM
+          VA (IP,iPhase) = VA (IP,iPhase) * INVNUM
+          WA (IP,iPhase) = WA (IP,iPhase) * INVNUM
+          PNA(IP,iPhase) = PNA(IP,iPhase) * INVNUM
         end do
         do IE=1,NE
-          PA (IE,II) = PA (IE,II) * INVNUM
+          PA (IE,iPhase) = PA (IE,iPhase) * INVNUM
         end do
       end do
 
-      !! ISUM = 0 - NSTEP-1
-      !if(ISUM.NE.NSTEP)then
-      !    ! ゼロ割りを防ぐ
-      !    if(NSUM < 1)then
-      !        WRITE(IUT6,*) "ERROR IN FLAG1"
-      !        STOP
-      !    endif
-      !    INVNUM = 1.0E0 / float(NSUM)
-      !    do II=ISUM,NSTEP
-      !      UA (:,II) = UA (:,II) * INVNUM
-      !      VA (:,II) = VA (:,II) * INVNUM
-      !      WA (:,II) = WA (:,II) * INVNUM
-      !      PA (:,II) = PA (:,II) * INVNUM
-      !      PNA(:,II) = PNA(:,II) * INVNUM
-      !    end do
-      !endif
-      !if(ISUM.NE.0)then
-      !    ! ゼロ割りを防ぐ
-      !    if(NSUM <= 1)then
-      !        WRITE(IUT6,*) "ERROR IN FLAG2"
-      !        STOP
-      !    endif
-      !    INVNUM = 1.0E0 / float(NSUM-1)
-      !    do II=1,ISUM
-      !      UA (:,II) = UA (:,II) * INVNUM
-      !      VA (:,II) = VA (:,II) * INVNUM
-      !      WA (:,II) = WA (:,II) * INVNUM
-      !      PA (:,II) = PA (:,II) * INVNUM
-      !      PNA(:,II) = PNA(:,II) * INVNUM
-      !    end do
-      !endif
 !
 ! output AVE file
 !
-      do II=1,NSTEP
+      do iPhase=1,numPhase
           TIMEP = 0.0E0
           ISTEP = NSUM
           do IP=1,NP
-            U  (IP)= UA (IP,II)
-            V  (IP)= VA (IP,II)
-            W  (IP)= WA (IP,II)
-            PN (IP)= PNA(IP,II)
+            U  (IP)= UA (IP,iPhase)
+            V  (IP)= VA (IP,iPhase)
+            W  (IP)= WA (IP,iPhase)
+            PN (IP)= PNA(IP,iPhase)
           end do
           do IE=1,NE
-            P(IE)  = PA (IE,II)
+            P(IE)  = PA (IE,iPhase)
           end do
  
           IACT = 2
-          write(CNUM,'(I4.4)') II
+          write(CNUM,'(I4.4)') iPhase
           FILEAVE = trim(FILEAV)//'.P'//CNUM
           call GFALL(IUT0,IUT6,IUTAV,FILEAVE,
      *               MCOM,NCOMFL,COMFLE,
