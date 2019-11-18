@@ -54,7 +54,7 @@
       integer(4)    :: ISTEP,NPCHK,NEPRS,NPPRS
       real(4)       :: TIMEP,INVNUM
       character(60) :: FILEMS,FILEAR,FILEFF,FILEAV,FILEAVE,FILEFS
-      integer(4)    :: NSTEP,ISUM,II,NSUM,NFLOWS
+      integer(4)    :: NSTEP,ISUM,II,NSUM,IFLOWS,NFLOWS
 !     [work]
       integer(4)    :: NP,NE,NDUM,IP,IE
       character(4)  :: CNUM
@@ -235,8 +235,8 @@
         PA = 0.0E0
         PNA = 0.0E0
         NSUM = 0
-        do II=1,NFLOWS
-          write(CNUM,'(I4.4)') II
+        do IFLOWS=1,NFLOWS
+          write(CNUM,'(I4.4)') IFLOWS
           IF(FLAGDELIM.eq.0)THEN
             FILEFS=trim(FILEFF)//".P"//CNUM
           ELSEIF(FLAGDELIM.eq.1)THEN
@@ -260,7 +260,7 @@
           if(IERR.NE.0)   STOP
           ! ISUM = 0 - NSTEP-1
           ! 1,2,3,..,0(NSTEP),1,2,3..,0(NSTEP)
-          ISUM = mod(II,NSTEP)
+          ISUM = mod(IFLOWS,NSTEP)
           ! NSUMは平均した回数
           IF(ISUM == 0) NSUM = NSUM + 1
           ! ISUM+1 = 1 - NSTEP
@@ -273,7 +273,7 @@
           do IE=1,NE
             PA (IE,ISUM+1) = PA (IE,ISUM+1) + P(IE)
           end do
-          write(IUT6,*) "averaged:when NFLOWS=",II,",NSUM=",NSUM,
+          write(IUT6,*) "averaged:when NFLOWS=",IFLOWS,",NSUM=",NSUM,
      *                                 ",ISUM=",ISUM
         end do
       ELSE
