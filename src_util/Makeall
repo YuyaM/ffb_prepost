@@ -1,3 +1,4 @@
 #!/bin/bash
 # script for automatically compiled
-cd phaseAverage ; make -f ../../../make/makefile load ; cd ..
+cd phaseAverage     ; make -f ../../../make/makefile load ; cd ..
+cd set_new_boundary ; make -f ../../../make/makefile load ; cd ..
